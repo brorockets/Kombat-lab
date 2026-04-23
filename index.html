@@ -1,0 +1,118 @@
+<!DOCTYPE html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Kombat Lab</title>
+    
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIktvbWJhdCBMYWIiLAogICJzaG9ydF9uYW1lIjogIktvbWJhdCBMYWIiLAogICJzdGFydF91cmwiOiAiLi9pbmRleC5odG1sIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGEwYTBjIiwKICAidGhlbWVfY29sb3IiOiAiIzBhMGEwYyIKfQ==">
+
+    <style>
+        :root { --bg: #0a0a0c; --card: #16161a; --accent: #ff3e3e; --text: #f0f0f0; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #2d2d35; }
+        .card-img { width: 100%; height: 110px; background: #1a1a1f; object-fit: cover; display: block; }
+        .card-name { padding: 12px; font-weight: 600; text-align: center; font-size: 14px; text-transform: uppercase; }
+        #editor { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); flex-direction: column; z-index: 1000; }
+        .editor-header { padding: 15px; display: flex; justify-content: space-between; background: #16161a; }
+        .editor-body { padding: 20px; display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+        input, textarea { background: #1c1c22; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 16px; }
+        textarea { flex: 1; resize: none; }
+        .btn { padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; }
+        .btn-add { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 64px; height: 64px; border-radius: 50%; font-size: 32px; }
+        .btn-save { background: #ff3e3e; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header"><h1>KOMBAT LAB</h1></div>
+<div class="grid" id="mainGrid"></div>
+<button class="btn btn-add" onclick="openEditor()">+</button>
+
+<div id="editor">
+    <div class="editor-header">
+        <button class="btn" style="background:none; color:#888" onclick="closeEditor()">CANCEL</button>
+        <button class="btn btn-save" onclick="saveEntry()">SAVE LAB</button>
+    </div>
+    <div class="editor-body">
+        <input type="text" id="nameInput" placeholder="CHARACTER NAME">
+        <input type="file" id="imageInput" accept="image/*">
+        <textarea id="dataInput" placeholder="Combos/Notes..."></textarea>
+    </div>
+</div>
+
+<script>
+    // --- APP LOGIC ---
+    let db = JSON.parse(localStorage.getItem('kombat_data_v2')) || [];
+    function render() {
+        const grid = document.getElementById('mainGrid');
+        grid.innerHTML = db.map(item => `
+            <div class="card" onclick="openEditor('${item.id}')">
+                ${item.img ? `<img src="${item.img}" class="card-img">` : '<div class="card-img"></div>'}
+                <div class="card-name">${item.name}</div>
+            </div>
+        `).join('');
+    }
+    function openEditor(id = null) {
+        const entry = db.find(e => e.id == id);
+        document.getElementById('nameInput').value = entry ? entry.name : '';
+        document.getElementById('dataInput').value = entry ? entry.data : '';
+        document.getElementById('editor').style.display = 'flex';
+        window.currentId = id;
+    }
+    function closeEditor() { document.getElementById('editor').style.display = 'none'; }
+    async function saveEntry() {
+        const name = document.getElementById('nameInput').value;
+        const data = document.getElementById('dataInput').value;
+        const file = document.getElementById('imageInput').files[0];
+        let img = window.currentId ? db.find(e => e.id == window.currentId).img : null;
+        if (file) img = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(file); });
+        
+        if (window.currentId) {
+            const i = db.findIndex(e => e.id == window.currentId);
+            db[i] = { ...db[i], name, data, img };
+        } else {
+            db.push({ id: Date.now(), name, data, img });
+        }
+        localStorage.setItem('kombat_data_v2', JSON.stringify(db));
+        render(); closeEditor();
+    }
+
+    // --- SERVICE WORKER REGISTRATION (OFFLINE MAGIC) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // We use a Data URL for the service worker so it's all in one file!
+            const swCode = `
+                const CACHE = 'kombat-cache-v1';
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE).then(c => c.add(location.href)));
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'text/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        });
+    }
+
+    render();
+</script>
+</body>
+</html>
+
+
+<html>
+<head>
+  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
+  <title>Hello, World!</title>
+</head>
+<body>
+  <h1>
+    Hello, World!
+  </h1>
+</body>
+</html>
