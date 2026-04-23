@@ -96,6 +96,50 @@
     }
 
     render();
+<script>
+    let db = JSON.parse(localStorage.getItem('kombat_data_v2')) || [];
+    function render() {
+        const grid = document.getElementById('mainGrid');
+        grid.innerHTML = db.map(item => `
+            <div class="card" onclick="openEditor('${item.id}')">
+                ${item.img ? `<img src="${item.img}" class="card-img">` : '<div class="card-img"></div>'}
+                <div class="card-name">${item.name}</div>
+            </div>
+        `).join('');
+    }
+    function openEditor(id = null) {
+        const entry = db.find(e => e.id == id);
+        document.getElementById('nameInput').value = entry ? entry.name : '';
+        document.getElementById('dataInput').value = entry ? entry.data : '';
+        document.getElementById('editor').style.display = 'flex';
+        window.currentId = id;
+    }
+    function closeEditor() { document.getElementById('editor').style.display = 'none'; }
+    async function saveEntry() {
+        const name = document.getElementById('nameInput').value;
+        const data = document.getElementById('dataInput').value;
+        const file = document.getElementById('imageInput').files[0];
+        let img = window.currentId ? db.find(e => e.id == window.currentId).img : null;
+        if (file) img = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(file); });
+        
+        if (window.currentId) {
+            const i = db.findIndex(e => e.id == window.currentId);
+            db[i] = { ...db[i], name, data, img };
+        } else {
+            db.push({ id: Date.now(), name, data, img });
+        }
+        localStorage.setItem('kombat_data_v2', JSON.stringify(db));
+        render(); closeEditor();
+    }
+
+    // --- CLEAN SERVICE WORKER REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => document.getElementById('status').innerText = 'SYSTEM READY')
+            .catch(() => document.getElementById('status').innerText = 'REGISTRATION FAILED');
+    }
+
+    render();
 </script>
 </body>
 </html>
