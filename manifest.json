@@ -1,9 +1,20 @@
 {
   "name": "Kombat Lab",
   "short_name": "Kombat Lab",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0a0a0c",
   "theme_color": "#0a0a0c",
-  "icons": []
+  "icons": [
+    {
+      "src": "resized-image.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "57fa9aa16ae0a22bc2867f26bc5f4666.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
