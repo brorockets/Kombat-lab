@@ -132,12 +132,20 @@
         render(); closeEditor();
     }
 
-    // --- CLEAN SERVICE WORKER REGISTRATION ---
+        // --- DIAGNOSTIC REGISTRATION ---
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => document.getElementById('status').innerText = 'SYSTEM READY')
-            .catch(() => document.getElementById('status').innerText = 'REGISTRATION FAILED');
+        navigator.serviceWorker.register('sw.js') 
+            .then(() => {
+                document.getElementById('status').innerText = 'SYSTEM READY';
+            })
+            .catch((err) => {
+                // This will tell us if it's a 404 (file missing) or something else
+                document.getElementById('status').innerText = 'ERROR: ' + err.message;
+            });
+    } else {
+        document.getElementById('status').innerText = 'PWA NOT SUPPORTED';
     }
+
 
     render();
 </script>
