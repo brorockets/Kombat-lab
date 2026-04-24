@@ -1,44 +1,160 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Kombat Lab</title>
-  <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kombat Lab RAW</title>
+    <style>
+        :root { --bg: #0a0a0c; --card: #16161a; --accent: #ff3e3e; --text: #f0f0f0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+
+        .card { 
+            background: var(--card); border-radius: 10px; overflow: hidden; 
+            border: 1px solid #2d2d35; transition: transform 0.1s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card-img { width: 100%; height: 100px; background: #222; object-fit: cover; display: block; }
+        .card-name { padding: 10px; font-weight: 600; text-align: center; font-size: 14px; }
+
+        #editor { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--bg); flex-direction: column; z-index: 1000;
+        }
+        .editor-header { padding: 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #222; }
+        .editor-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+        
+        input, textarea { 
+            background: #1c1c22; border: 1px solid #333; color: white; 
+            padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 16px;
+        }
+        textarea { flex: 1; resize: none; font-family: monospace; }
+        
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-add { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 30px; }
+        .btn-save { background: #00c853; color: white; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-delete { background: #ff1744; color: white; margin-top: 10px; }
+    </style>
 </head>
 <body>
-  <h1>Kombat Lab</h1>
-  <div id="status">Checking system...</div>
 
-  <!-- Notes Section -->
-  <div id="notes"></div>
-  <button id="addNote">Add Note</button>
+<div class="header">
+    <h1 style="margin:0; font-size: 24px;">Kombat Lab</h1>
+</div>
 
-  <script>
-    // Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(() => document.getElementById('status').innerText = 'SYSTEM READY')
-        .catch(() => document.getElementById('status').innerText = 'REGISTRATION FAILED');
+<div class="grid" id="mainGrid"></div>
+
+<button class="btn btn-add" onclick="openEditor()">+</button>
+
+<div id="editor">
+    <div class="editor-header">
+        <button class="btn btn-cancel" onclick="closeEditor()">Cancel</button>
+        <button class="btn btn-save" onclick="saveEntry()">Save</button>
+    </div>
+    <div class="editor-body">
+        <input type="text" id="nameInput" placeholder="Character Name">
+        <input type="file" id="imageInput" accept="image/*">
+        <textarea id="dataInput" placeholder="Type your combos and notes here..."></textarea>
+        <button class="btn btn-delete" id="deleteBtn" style="display:none;" onclick="deleteEntry()">Delete Character</button>
+    </div>
+</div>
+
+<script>
+    let db = [];
+    let currentId = null;
+
+    // Initialize: Load from LocalStorage
+    function init() {
+        const saved = localStorage.getItem('kombat_data');
+        if (saved) db = JSON.parse(saved);
+        render();
     }
 
-    // Notes Logic
-    const notesContainer = document.getElementById('notes');
-    document.getElementById('addNote').addEventListener('click', () => {
-      const note = document.createElement('div');
-      note.className = 'note';
-      note.innerHTML = `
-        <p>New Note</p>
-        <button class="delete-btn">Delete</button>
-      `;
-      notesContainer.appendChild(note);
+    function render() {
+        const grid = document.getElementById('mainGrid');
+        grid.innerHTML = db.map(item => `
+            <div class="card" onclick="openEditor('${item.id}')">
+                <img src="${item.img || ''}" class="card-img" style="display: ${item.img ? 'block' : 'none'}">
+                <div class="card-name">${item.name}</div>
+            </div>
+        `).join('');
+    }
+
+    function openEditor(id = null) {
+        currentId = id;
+        const entry = db.find(e => e.id == id);
+        
+        document.getElementById('nameInput').value = entry ? entry.name : '';
+        document.getElementById('dataInput').value = entry ? entry.data : '';
+        document.getElementById('deleteBtn').style.display = id ? 'block' : 'none';
+        document.getElementById('imageInput').value = '';
+        
+        document.getElementById('editor').style.display = 'flex';
+    }
+
+    function closeEditor() {
+        document.getElementById('editor').style.display = 'none';
+    }
+
+    async function saveEntry() {
+        const name = document.getElementById('nameInput').value;
+        const data = document.getElementById('dataInput').value;
+        const file = document.getElementById('imageInput').files[0];
+        
+        let imgBase64 = currentId ? (db.find(e => e.id == currentId).img) : null;
+
+        if (file) {
+            imgBase64 = await toBase64(file);
+        }
+
+        if (currentId) {
+            // Update
+            const index = db.findIndex(e => e.id == currentId);
+            db[index] = { ...db[index], name, data, img: imgBase64 };
+        } else {
+            // Create
+            db.push({ id: Date.now(), name, data, img: imgBase64 });
+        }
+
+        localStorage.setItem('kombat_data', JSON.stringify(db));
+        render();
+        closeEditor();
+    }
+
+    function deleteEntry() {
+        if (confirm('Delete this character?')) {
+            db = db.filter(e => e.id != currentId);
+            localStorage.setItem('kombat_data', JSON.stringify(db));
+            render();
+            closeEditor();
+        }
+    }
+
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
     });
 
-    document.addEventListener('click', (event) => {
-      if (event.target.classList.contains('delete-btn')) {
-        const note = event.target.closest('.note');
-        note.remove();
-      }
-    });
-  </script>
+    init();
+</script>
+
 </body>
-</html>Slide clipboard items to delete them
+</html>
+
+
+<html>
+<head>
+  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
+  <title>Hello, World!</title>
+</head>
+<body>
+  <h1>
+    Hello, World!
+  </h1>
+</body>
+</html>
