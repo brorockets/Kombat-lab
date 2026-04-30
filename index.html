@@ -5,60 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kombat Lab RAW</title>
     <style>
-        :root { --bg: #0a0a0c; --card: #16161a; --accent: #ff3e3e; --text: #f0f0f0; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        :root { 
+            --bg: #0a0a0c; 
+            --card: rgba(22, 22, 26, 0.9); 
+            --accent: #ff3e3e; 
+            --text: #f0f0f0; 
+        }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--bg);
+            background-image: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('YOUR_IMAGE_LINK_HERE');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: var(--text); margin: 0; padding: 20px; 
+        }
+        
+        .header { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
+        
+        .game-group { margin-bottom: 40px; }
+        .group-title { 
+            font-size: 18px; font-weight: 800; color: var(--accent); 
+            text-transform: uppercase; border-bottom: 2px solid #333; 
+            padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 1px;
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
 
         .card { 
             background: var(--card); border-radius: 10px; overflow: hidden; 
-            border: 1px solid #2d2d35; transition: transform 0.1s;
+            border: 1px solid #2d2d35; transition: transform 0.1s; backdrop-filter: blur(5px);
         }
-        .card:active { transform: scale(0.98); }
-        .card-img { width: 100%; height: 100px; background: #222; object-fit: cover; display: block; }
-        .card-name { padding: 10px; font-weight: 600; text-align: center; font-size: 14px; }
+        .card:active { transform: scale(0.96); }
+        .card-img { width: 100%; height: 90px; background: #222; object-fit: cover; display: block; }
+        .card-name { padding: 10px; font-weight: 600; text-align: center; font-size: 13px; }
 
         #editor { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: var(--bg); flex-direction: column; z-index: 1000;
+            background: var(--bg); flex-direction: column; z-index: 2000;
         }
-        .editor-header { padding: 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #222; }
-        .editor-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+        .editor-header { padding: 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #222; background: var(--bg); }
+        .editor-body { padding: 20px; display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
         
+        #editorImagePreview { width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; background: #111; display: none; }
+
         input, textarea { 
             background: #1c1c22; border: 1px solid #333; color: white; 
-            padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 16px;
+            padding: 12px; border-radius: 8px; font-size: 16px; width: 100%; 
+            box-sizing: border-box; font-family: inherit; margin-bottom: 15px;
         }
-        textarea { flex: 1; resize: none; font-family: monospace; }
         
+        .category-block { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
+        .cat-text { min-height: 50px; height: auto; overflow: hidden; resize: none; line-height: 1.5; display: block; margin-bottom: 0; }
+        .btn-del-cat { color: #ff3e3e; background: none; border: none; font-size: 11px; cursor: pointer; padding: 5px 0; }
+
         .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-add { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 30px; }
+        .btn-add { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; font-size: 30px; box-shadow: 0 4px 15px rgba(255,62,62,0.4); z-index: 1000; }
         .btn-save { background: #00c853; color: white; }
-        .btn-cancel { background: #333; color: white; }
-        .btn-delete { background: #ff1744; color: white; margin-top: 10px; }
+        .btn-plus-cat { background: #222; color: var(--accent); width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); font-size: 20px; margin: 10px auto 30px auto; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1 style="margin:0; font-size: 24px;">Kombat Lab</h1>
+    <h1 style="margin:0; font-size: 28px; letter-spacing: 2px; color: var(--accent); text-shadow: 2px 2px 10px black;">KOMBAT LAB</h1>
+    <p style="margin-top: 5px; opacity: 0.8; font-style: italic;">A Fighting Chance</p>
 </div>
 
-<div class="grid" id="mainGrid"></div>
+<div id="mainContainer"></div>
 
 <button class="btn btn-add" onclick="openEditor()">+</button>
 
 <div id="editor">
     <div class="editor-header">
-        <button class="btn btn-cancel" onclick="closeEditor()">Cancel</button>
+        <button class="btn" style="background:#333; color:white;" onclick="closeEditor()">Cancel</button>
         <button class="btn btn-save" onclick="saveEntry()">Save</button>
     </div>
     <div class="editor-body">
-        <input type="text" id="nameInput" placeholder="Character Name">
-        <input type="file" id="imageInput" accept="image/*">
-        <textarea id="dataInput" placeholder="Type your combos and notes here..."></textarea>
-        <button class="btn btn-delete" id="deleteBtn" style="display:none;" onclick="deleteEntry()">Delete Character</button>
+        <img id="editorImagePreview" src="">
+        
+        <label style="font-size: 11px; color: #888;">Character Name</label>
+        <input type="text" id="nameInput" placeholder="e.g. Scorpion">
+        
+        <label style="font-size: 11px; color: #888;">Game / Group Name</label>
+        <input type="text" id="gameInput" placeholder="e.g. MK1 or IGAU">
+        
+        <label style="font-size: 11px; color: #888;">Character Art</label>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect(this)">
+        
+        <div id="categoriesContainer"></div>
+        <button class="btn btn-plus-cat" onclick="addCategoryUI()">+</button>
+        
+        <button class="btn" style="background: #ff1744; color: white; margin-top:10px;" id="deleteBtn" onclick="deleteEntry()">Delete Character</button>
     </div>
 </div>
 
@@ -66,95 +103,143 @@
     let db = [];
     let currentId = null;
 
-    // Initialize: Load from LocalStorage
     function init() {
-        const saved = localStorage.getItem('kombat_data');
+        const saved = localStorage.getItem('kombat_lab_vFinal');
         if (saved) db = JSON.parse(saved);
         render();
     }
 
     function render() {
-        const grid = document.getElementById('mainGrid');
-        grid.innerHTML = db.map(item => `
-            <div class="card" onclick="openEditor('${item.id}')">
-                <img src="${item.img || ''}" class="card-img" style="display: ${item.img ? 'block' : 'none'}">
-                <div class="card-name">${item.name}</div>
-            </div>
-        `).join('');
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = "";
+
+        const groups = {};
+        db.forEach(item => {
+            const game = item.game || "Uncategorized";
+            if (!groups[game]) groups[game] = [];
+            groups[game].push(item);
+        });
+
+        Object.keys(groups).forEach(gameName => {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'game-group';
+            groupDiv.innerHTML = `
+                <div class="group-title">${gameName}</div>
+                <div class="grid">
+                    ${groups[gameName].map(item => `
+                        <div class="card" onclick="openEditor('${item.id}')">
+                            <img src="${item.img || ''}" class="card-img" style="display: ${item.img ? 'block' : 'none'}">
+                            <div class="card-name">${item.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(groupDiv);
+        });
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    function addCategoryUI(title = "", text = "") {
+        const container = document.getElementById('categoriesContainer');
+        const div = document.createElement('div');
+        div.className = 'category-block';
+        div.innerHTML = `
+            <input type="text" class="cat-title" placeholder="Category Name" value="${title}" style="margin-bottom:10px; font-weight:bold;">
+            <textarea class="cat-text" placeholder="Moves..." oninput="autoResize(this)">${text}</textarea>
+            <button class="btn-del-cat" onclick="this.parentElement.remove()">Remove</button>
+        `;
+        container.appendChild(div);
+        setTimeout(() => autoResize(div.querySelector('textarea')), 10);
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('editorImagePreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 
     function openEditor(id = null) {
         currentId = id;
         const entry = db.find(e => e.id == id);
+        const imgPreview = document.getElementById('editorImagePreview');
+        const container = document.getElementById('categoriesContainer');
         
+        container.innerHTML = "";
         document.getElementById('nameInput').value = entry ? entry.name : '';
-        document.getElementById('dataInput').value = entry ? entry.data : '';
+        document.getElementById('gameInput').value = entry ? (entry.game || '') : '';
+        
+        if (entry && entry.categories) {
+            entry.categories.forEach(cat => addCategoryUI(cat.title, cat.text));
+        } else {
+            addCategoryUI("Combos", ""); 
+        }
+        
+        if (entry && entry.img) {
+            imgPreview.src = entry.img;
+            imgPreview.style.display = 'block';
+        } else {
+            imgPreview.style.display = 'none';
+        }
+
         document.getElementById('deleteBtn').style.display = id ? 'block' : 'none';
         document.getElementById('imageInput').value = '';
-        
         document.getElementById('editor').style.display = 'flex';
+        setTimeout(() => document.querySelectorAll('.cat-text').forEach(ta => autoResize(ta)), 50);
     }
 
-    function closeEditor() {
-        document.getElementById('editor').style.display = 'none';
-    }
+    function closeEditor() { document.getElementById('editor').style.display = 'none'; }
 
     async function saveEntry() {
-        const name = document.getElementById('nameInput').value;
-        const data = document.getElementById('dataInput').value;
-        const file = document.getElementById('imageInput').files[0];
+        const name = document.getElementById('nameInput').value || "Unnamed";
+        const game = document.getElementById('gameInput').value || "Uncategorized";
+        const imgPreview = document.getElementById('editorImagePreview');
+        const imgBase64 = imgPreview.style.display === 'block' ? imgPreview.src : null;
         
-        let imgBase64 = currentId ? (db.find(e => e.id == currentId).img) : null;
+        const categoryBlocks = document.querySelectorAll('.category-block');
+        const categories = Array.from(categoryBlocks).map(block => ({
+            title: block.querySelector('.cat-title').value,
+            text: block.querySelector('.cat-text').value
+        }));
 
-        if (file) {
-            imgBase64 = await toBase64(file);
-        }
+        const characterData = {
+            id: currentId || Date.now().toString(),
+            name,
+            game,
+            img: imgBase64,
+            categories: categories
+        };
 
         if (currentId) {
-            // Update
             const index = db.findIndex(e => e.id == currentId);
-            db[index] = { ...db[index], name, data, img: imgBase64 };
+            db[index] = characterData;
         } else {
-            // Create
-            db.push({ id: Date.now(), name, data, img: imgBase64 });
+            db.push(characterData);
         }
 
-        localStorage.setItem('kombat_data', JSON.stringify(db));
+        localStorage.setItem('kombat_lab_vFinal', JSON.stringify(db));
         render();
         closeEditor();
     }
 
     function deleteEntry() {
-        if (confirm('Delete this character?')) {
+        if (confirm('Delete this kombatant?')) {
             db = db.filter(e => e.id != currentId);
-            localStorage.setItem('kombat_data', JSON.stringify(db));
+            localStorage.setItem('kombat_lab_vFinal', JSON.stringify(db));
             render();
             closeEditor();
         }
     }
-
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-
     init();
 </script>
-
-</body>
-</html>
-
-
-<html>
-<head>
-  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
-  <title>Hello, World!</title>
-</head>
-<body>
-  <h1>
-    Hello, World!
-  </h1>
 </body>
 </html>
